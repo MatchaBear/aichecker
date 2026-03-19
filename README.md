@@ -2,6 +2,8 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
+Current version: `v1.0.0`
+
 Right now it checks:
 
 - OpenAI
@@ -37,6 +39,7 @@ The `aicheck` script:
 The script currently uses this logic:
 
 - `DOWN`: the API returns HTTP code `000`
+- `BROKEN`: the base API returns a non-`2xx` or non-`3xx` HTTP status
 - `BROKEN`: the models endpoint sanity check fails
 - `SLOW`: total response time is greater than `1.5` seconds
 - `UP`: none of the above conditions are triggered
@@ -91,6 +94,13 @@ Wed Mar 19 09:00:00 +08 2026
 
 OpenAI  UP | 0.214s | HTTP:200 | API:✔ | Status:All Systems Operational | Issues:None
 Claude  SLOW | 1.812s | HTTP:200 | API:✔ | Status:Minor Service Outage | Issues:Console, API Requests
+```
+
+Example of a broken result:
+
+```text
+OpenAI  BROKEN | 0.051044s | HTTP:421 | API:✔ | Status:All Systems Operational | Issues:None
+Claude  BROKEN | 0.133106s | HTTP:404 | API:✔ | Status:Minor Service Outage | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
 ```
 
 ## Notes

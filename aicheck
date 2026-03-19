@@ -23,6 +23,8 @@ classify() {
 
   if [[ "$CODE" == "000" ]]; then
     echo -e "${RED}DOWN${NC}"
+  elif [[ ! "$CODE" =~ ^[23][0-9][0-9]$ ]]; then
+    echo -e "${RED}BROKEN${NC}"
   elif [[ "$API_OK" == "✖" ]]; then
     echo -e "${RED}BROKEN${NC}"
   elif awk "BEGIN {exit !($TIME > 1.5)}"; then
@@ -69,4 +71,3 @@ printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
 
 printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
   "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_ISSUES"
-
