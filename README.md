@@ -66,13 +66,22 @@ Run the script directly:
 ./aicheck
 ```
 
-Or make it available on your shell path:
+Or make it available globally in your shell so you can run:
 
 ```bash
-chmod +x aicheck
-sudo mv aicheck /usr/local/bin/aicheck
 aicheck
 ```
+
+One simple setup is to symlink it into `~/bin`:
+
+```bash
+chmod +x ~/Desktop/Projects/aichecker/aicheck
+ln -sf ~/Desktop/Projects/aichecker/aicheck ~/bin/aicheck
+source ~/.zshrc
+aicheck
+```
+
+This assumes `~/bin` is already on your `PATH`.
 
 ## Example output
 
@@ -100,4 +109,4 @@ Claude  SLOW | 1.812s | HTTP:200 | API:✔ | Status:Minor Service Outage | Issue
 
 ## License
 
-Add a license if you plan to open-source or reuse this outside personal tooling.
+This project includes a `LICENSE` file in the repository.
