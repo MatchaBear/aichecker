@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.0.0`
+Current version: `v1.0.1`
 
 Right now it checks:
 
@@ -12,6 +12,7 @@ Right now it checks:
 For each provider, the script collects:
 
 - Basic HTTP reachability
+- A simple interpretation of whether the HTTP result looks normal
 - Total response time
 - A simple public API sanity check
 - Official status page summary
@@ -43,6 +44,12 @@ The script currently uses this logic:
 - `BROKEN`: the models endpoint sanity check fails
 - `SLOW`: total response time is greater than `1.5` seconds
 - `UP`: none of the above conditions are triggered
+
+The output also labels the HTTP result directly:
+
+- `normal`: `2xx` or `3xx`
+- `abnormal`: anything outside `2xx` or `3xx`
+- `no response`: `000`
 
 Status-page severity is also colorized:
 
@@ -92,15 +99,15 @@ This assumes `~/bin` is already on your `PATH`.
 === AI HEALTH CHECK ===
 Wed Mar 19 09:00:00 +08 2026
 
-OpenAI  UP | 0.214s | HTTP:200 | API:✔ | Status:All Systems Operational | Issues:None
-Claude  SLOW | 1.812s | HTTP:200 | API:✔ | Status:Minor Service Outage | Issues:Console, API Requests
+OpenAI  UP | 0.214s | HTTP:200 (normal) | API:✔ | Status:All Systems Operational | Issues:None
+Claude  SLOW | 1.812s | HTTP:200 (normal) | API:✔ | Status:Minor Service Outage | Issues:Console, API Requests
 ```
 
 Example of a broken result:
 
 ```text
-OpenAI  BROKEN | 0.051044s | HTTP:421 | API:✔ | Status:All Systems Operational | Issues:None
-Claude  BROKEN | 0.133106s | HTTP:404 | API:✔ | Status:Minor Service Outage | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
+OpenAI  BROKEN | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Issues:None
+Claude  BROKEN | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
 ```
 
 ## Notes
@@ -109,9 +116,10 @@ Claude  BROKEN | 0.133106s | HTTP:404 | API:✔ | Status:Minor Service Outage | 
 - Because provider edge behavior can vary, the script is best treated as a quick operational check rather than a formal uptime monitor.
 - Output uses ANSI color codes for readability in a terminal.
 
-## Possible future improvements
+## Roadmap
 
 - Add more providers
+- Distinguish `DEGRADED` from `BROKEN`
 - Add JSON output mode
 - Add timeout and retry options
 - Add alerting or cron-friendly exit codes

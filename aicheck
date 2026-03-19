@@ -15,6 +15,18 @@ color_status() {
   esac
 }
 
+format_http() {
+  CODE=$1
+
+  if [[ "$CODE" == "000" ]]; then
+    echo "${CODE} (no response)"
+  elif [[ "$CODE" =~ ^[23][0-9][0-9]$ ]]; then
+    echo "${CODE} (normal)"
+  else
+    echo "${CODE} (abnormal)"
+  fi
+}
+
 # ── Helper: classify health ────────────────────────────
 classify() {
   CODE=$1
@@ -45,6 +57,7 @@ jq -r '.components[] | select(.status!="operational") | .name' | \
 tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
 OPENAI_ISSUES=${OPENAI_ISSUES:-None}
 OPENAI_STATUS=$(color_status "$OPENAI_STATUS_IND" "$OPENAI_STATUS_DESC")
+OPENAI_HTTP_LABEL=$(format_http "$OPENAI_HTTP")
 OPENAI_HEALTH=$(classify "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API")
 
 # ── Claude ─────────────────────────────────────────────
@@ -58,6 +71,7 @@ jq -r '.components[] | select(.status!="operational") | .name' | \
 tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
 CLAUDE_ISSUES=${CLAUDE_ISSUES:-None}
 CLAUDE_STATUS=$(color_status "$CLAUDE_STATUS_IND" "$CLAUDE_STATUS_DESC")
+CLAUDE_HTTP_LABEL=$(format_http "$CLAUDE_HTTP")
 CLAUDE_HEALTH=$(classify "$CLAUDE_HTTP" "$CLAUDE_TIME" "$CLAUDE_API")
 
 
@@ -67,7 +81,7 @@ echo "$(date)"
 echo ""
 
 printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
-  "OpenAI" "$OPENAI_HEALTH" "$OPENAI_TIME" "$OPENAI_HTTP" "$OPENAI_API" "$OPENAI_STATUS_DESC" "$OPENAI_ISSUES"
+  "OpenAI" "$OPENAI_HEALTH" "$OPENAI_TIME" "$OPENAI_HTTP_LABEL" "$OPENAI_API" "$OPENAI_STATUS_DESC" "$OPENAI_ISSUES"
 
 printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
-  "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_ISSUES"
+  "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP_LABEL" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_ISSUES"
