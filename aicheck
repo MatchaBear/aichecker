@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# ── Colors ─────────────────────────────────────────────
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+RED="\033[0;31m"
+NC="\033[0m"
+
+color_status() {
+  case "$1" in
+    none) echo -e "${GREEN}$2${NC}" ;;
+    minor) echo -e "${YELLOW}$2${NC}" ;;
+    major|critical) echo -e "${RED}$2${NC}" ;;
+    *) echo "$2" ;;
+  esac
+}
+
+# ── Helper: classify health ────────────────────────────
+classify() {
+  CODE=$1
+  TIME=$2
+  API_OK=$3
+
+  if [[ "$CODE" == "000" ]]; then
+    echo -e "${RED}DOWN${NC}"
+  elif [[ "$API_OK" == "✖" ]]; then
+    echo -e "${RED}BROKEN${NC}"
+  elif awk "BEGIN {exit !($TIME > 1.5)}"; then
+    echo -e "${YELLOW}SLOW${NC}"
+  else
+    echo -e "${GREEN}UP${NC}"
+  fi
+}
+
+# ── OpenAI ─────────────────────────────────────────────
+OPENAI_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://api.openai.com)
+OPENAI_TIME=$(curl -o /dev/null -s -w "%{time_total}" https://api.openai.com)
+OPENAI_API=$(curl -s https://api.openai.com/v1/models | jq -e '.error.type' >/dev/null && echo "✔" || echo "✖")
+OPENAI_STATUS_DESC=$(curl -s https://status.openai.com/api/v2/summary.json | jq -r '.status.description')
+OPENAI_STATUS_IND=$(curl -s https://status.openai.com/api/v2/summary.json | jq -r '.status.indicator')
+OPENAI_ISSUES=$(curl -s https://status.openai.com/api/v2/summary.json | \
+jq -r '.components[] | select(.status!="operational") | .name' | \
+tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+OPENAI_ISSUES=${OPENAI_ISSUES:-None}
+OPENAI_STATUS=$(color_status "$OPENAI_STATUS_IND" "$OPENAI_STATUS_DESC")
+OPENAI_HEALTH=$(classify "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API")
+
+# ── Claude ─────────────────────────────────────────────
+CLAUDE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://api.anthropic.com)
+CLAUDE_TIME=$(curl -o /dev/null -s -w "%{time_total}" https://api.anthropic.com)
+CLAUDE_API=$(curl -s https://api.anthropic.com/v1/models | jq -e '.error.type' >/dev/null && echo "✔" || echo "✖")
+CLAUDE_STATUS_DESC=$(curl -sL https://status.anthropic.com/api/v2/summary.json | jq -r '.status.description')
+CLAUDE_STATUS_IND=$(curl -sL https://status.anthropic.com/api/v2/summary.json | jq -r '.status.indicator')
+CLAUDE_ISSUES=$(curl -sL https://status.anthropic.com/api/v2/summary.json | \
+jq -r '.components[] | select(.status!="operational") | .name' | \
+tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+CLAUDE_ISSUES=${CLAUDE_ISSUES:-None}
+CLAUDE_STATUS=$(color_status "$CLAUDE_STATUS_IND" "$CLAUDE_STATUS_DESC")
+CLAUDE_HEALTH=$(classify "$CLAUDE_HTTP" "$CLAUDE_TIME" "$CLAUDE_API")
+
+
+# ── Output ─────────────────────────────────────────────
+echo "=== AI HEALTH CHECK ==="
+echo "$(date)"
+echo ""
+
+printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
+  "OpenAI" "$OPENAI_HEALTH" "$OPENAI_TIME" "$OPENAI_HTTP" "$OPENAI_API" "$OPENAI_STATUS_DESC" "$OPENAI_ISSUES"
+
+printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
+  "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_ISSUES"
+
