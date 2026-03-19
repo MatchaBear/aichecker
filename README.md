@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.1.1`
+Current version: `v1.2.0`
 
 Right now it checks:
 
@@ -64,6 +64,8 @@ Status-page severity is also colorized:
 - Green for `none`
 - Yellow for `minor`
 - Red for `major` or `critical`
+
+In the terminal output, the `Status:` label stays uncolored while the status value itself is colorized based on provider severity.
 
 ## Requirements
 
