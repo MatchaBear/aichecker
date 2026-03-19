@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.3.0`
+Current version: `v2.0.0`
 
 Right now it checks:
 
@@ -26,7 +26,7 @@ The project also includes a continuous monitor mode that refreshes every 30 seco
 
 The `aicheck` script:
 
-1. Sends a request to the provider base API URL and records the HTTP status code.
+1. Sends a request to a documented provider API endpoint and records the HTTP status code.
 2. Measures total request time with `curl`.
 3. Calls the provider models endpoint and uses `jq` to inspect the response.
 4. Fetches the provider's official status page summary JSON.
@@ -42,9 +42,9 @@ The `aicheck` script:
 The script currently uses this logic:
 
 - `DOWN`: the API returns HTTP code `000`
-- `BROKEN`: the models endpoint sanity check fails
+- `BROKEN`: the documented API endpoint sanity check fails
 - `BROKEN`: the provider status page reports a `major` or `critical` incident
-- `DEGRADED`: the base API returns a non-`2xx` or non-`3xx` HTTP status
+- `DEGRADED`: the documented API endpoint returns an unusual HTTP status
 - `DEGRADED`: total response time is greater than `1.5` seconds
 - `DEGRADED`: the provider status page reports a `minor` incident
 - `UP`: none of the above conditions are triggered
@@ -54,8 +54,8 @@ The script currently uses this logic:
 
 The output also labels the HTTP result directly:
 
-- `normal`: `2xx` or `3xx`
-- `abnormal`: anything outside `2xx` or `3xx`
+- `normal for API probe`: `200`, `401`, or `403`
+- `abnormal`: anything outside those expected probe responses
 - `no response`: `000`
 
 The output also includes an `Impact:` field to explain the likely meaning of the detected issue in plain language.
@@ -134,8 +134,8 @@ ProviderX  BROKEN | 0.051044s | HTTP:200 (normal) | API:✖ | Status:Major Servi
 Example of a degraded result:
 
 ```text
-OpenAI  DEGRADED | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Impact:Probe result was unusual, but service may still work | Issues:None
-Claude  DEGRADED | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Impact:Probe result was unusual, but service may still work | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
+OpenAI  UP | 0.051044s | HTTP:401 (normal for API probe) | API:✔ | Status:All Systems Operational | Impact:No obvious service impact detected | Issues:None
+Claude  DEGRADED | 0.133106s | HTTP:401 (normal for API probe) | API:✔ | Status:Minor Service Outage | Impact:Partial service disruption reported | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
 ```
 
 ## Notes

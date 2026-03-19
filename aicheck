@@ -20,8 +20,8 @@ format_http() {
 
   if [[ "$CODE" == "000" ]]; then
     echo "${CODE} (no response)"
-  elif [[ "$CODE" =~ ^[23][0-9][0-9]$ ]]; then
-    echo "${CODE} (normal)"
+  elif [[ "$CODE" =~ ^(200|401|403)$ ]]; then
+    echo "${CODE} (normal for API probe)"
   else
     echo "${CODE} (abnormal)"
   fi
@@ -29,7 +29,7 @@ format_http() {
 
 is_normal_http() {
   CODE=$1
-  [[ "$CODE" =~ ^[23][0-9][0-9]$ ]]
+  [[ "$CODE" =~ ^(200|401|403)$ ]]
 }
 
 # ── Helper: classify health ────────────────────────────
@@ -70,7 +70,7 @@ impact_text() {
   elif [[ "$STATUS_IND" =~ ^(major|critical)$ ]]; then
     echo "Provider reports major service disruption"
   elif ! is_normal_http "$CODE"; then
-    echo "Probe result was unusual, but service may still work"
+    echo "Documented API endpoint responded unusually"
   elif awk "BEGIN {exit !($TIME > 1.5)}"; then
     echo "Responses are slower than expected"
   elif [[ "$STATUS_IND" == "minor" && "$ISSUES" != "None" ]]; then
@@ -83,9 +83,10 @@ impact_text() {
 }
 
 # ── OpenAI ─────────────────────────────────────────────
-OPENAI_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://api.openai.com)
-OPENAI_TIME=$(curl -o /dev/null -s -w "%{time_total}" https://api.openai.com)
-OPENAI_API=$(curl -s https://api.openai.com/v1/models | jq -e '.error.type' >/dev/null && echo "✔" || echo "✖")
+OPENAI_PROBE_URL="https://api.openai.com/v1/models"
+OPENAI_HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$OPENAI_PROBE_URL")
+OPENAI_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$OPENAI_PROBE_URL")
+OPENAI_API=$(curl -s "$OPENAI_PROBE_URL" | jq -e '(.object == "list") or (.error.type != null)' >/dev/null && echo "✔" || echo "✖")
 OPENAI_STATUS_DESC=$(curl -s https://status.openai.com/api/v2/summary.json | jq -r '.status.description')
 OPENAI_STATUS_IND=$(curl -s https://status.openai.com/api/v2/summary.json | jq -r '.status.indicator')
 OPENAI_ISSUES=$(curl -s https://status.openai.com/api/v2/summary.json | \
@@ -98,9 +99,10 @@ OPENAI_HEALTH=$(classify "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API" "$OPENAI_ST
 OPENAI_IMPACT=$(impact_text "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API" "$OPENAI_STATUS_IND" "$OPENAI_ISSUES")
 
 # ── Claude ─────────────────────────────────────────────
-CLAUDE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://api.anthropic.com)
-CLAUDE_TIME=$(curl -o /dev/null -s -w "%{time_total}" https://api.anthropic.com)
-CLAUDE_API=$(curl -s https://api.anthropic.com/v1/models | jq -e '.error.type' >/dev/null && echo "✔" || echo "✖")
+CLAUDE_PROBE_URL="https://api.anthropic.com/v1/models"
+CLAUDE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$CLAUDE_PROBE_URL")
+CLAUDE_TIME=$(curl -o /dev/null -s -w "%{time_total}" "$CLAUDE_PROBE_URL")
+CLAUDE_API=$(curl -s "$CLAUDE_PROBE_URL" | jq -e '(.data != null) or (.error.type != null) or (.type == "error")' >/dev/null && echo "✔" || echo "✖")
 CLAUDE_STATUS_DESC=$(curl -sL https://status.anthropic.com/api/v2/summary.json | jq -r '.status.description')
 CLAUDE_STATUS_IND=$(curl -sL https://status.anthropic.com/api/v2/summary.json | jq -r '.status.indicator')
 CLAUDE_ISSUES=$(curl -sL https://status.anthropic.com/api/v2/summary.json | \
