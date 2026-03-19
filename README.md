@@ -4,6 +4,11 @@
 
 Current version: `v2.0.0`
 
+Commands:
+
+- `aicheck`: run a one-time health check
+- `aicm`: run the continuous monitor, refreshing every 30 seconds until you stop it with `Ctrl+C`
+
 Right now it checks:
 
 - OpenAI
