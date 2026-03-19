@@ -27,22 +27,58 @@ format_http() {
   fi
 }
 
+is_normal_http() {
+  CODE=$1
+  [[ "$CODE" =~ ^[23][0-9][0-9]$ ]]
+}
+
 # ── Helper: classify health ────────────────────────────
 classify() {
   CODE=$1
   TIME=$2
   API_OK=$3
+  STATUS_IND=$4
 
   if [[ "$CODE" == "000" ]]; then
     echo -e "${RED}DOWN${NC}"
-  elif [[ ! "$CODE" =~ ^[23][0-9][0-9]$ ]]; then
-    echo -e "${RED}BROKEN${NC}"
   elif [[ "$API_OK" == "✖" ]]; then
     echo -e "${RED}BROKEN${NC}"
+  elif [[ "$STATUS_IND" =~ ^(major|critical)$ ]]; then
+    echo -e "${RED}BROKEN${NC}"
+  elif ! is_normal_http "$CODE"; then
+    echo -e "${YELLOW}DEGRADED${NC}"
   elif awk "BEGIN {exit !($TIME > 1.5)}"; then
-    echo -e "${YELLOW}SLOW${NC}"
+    echo -e "${YELLOW}DEGRADED${NC}"
+  elif [[ "$STATUS_IND" == "minor" ]]; then
+    echo -e "${YELLOW}DEGRADED${NC}"
   else
     echo -e "${GREEN}UP${NC}"
+  fi
+}
+
+impact_text() {
+  CODE=$1
+  TIME=$2
+  API_OK=$3
+  STATUS_IND=$4
+  ISSUES=$5
+
+  if [[ "$CODE" == "000" ]]; then
+    echo "No API response"
+  elif [[ "$API_OK" == "✖" ]]; then
+    echo "API endpoint behavior looks broken"
+  elif [[ "$STATUS_IND" =~ ^(major|critical)$ ]]; then
+    echo "Provider reports major service disruption"
+  elif ! is_normal_http "$CODE"; then
+    echo "Base API probe returned abnormal HTTP"
+  elif awk "BEGIN {exit !($TIME > 1.5)}"; then
+    echo "Responses are slower than expected"
+  elif [[ "$STATUS_IND" == "minor" && "$ISSUES" != "None" ]]; then
+    echo "Partial service disruption reported"
+  elif [[ "$STATUS_IND" == "minor" ]]; then
+    echo "Provider reports minor service issues"
+  else
+    echo "No obvious service impact detected"
   fi
 }
 
@@ -58,7 +94,8 @@ tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
 OPENAI_ISSUES=${OPENAI_ISSUES:-None}
 OPENAI_STATUS=$(color_status "$OPENAI_STATUS_IND" "$OPENAI_STATUS_DESC")
 OPENAI_HTTP_LABEL=$(format_http "$OPENAI_HTTP")
-OPENAI_HEALTH=$(classify "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API")
+OPENAI_HEALTH=$(classify "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API" "$OPENAI_STATUS_IND")
+OPENAI_IMPACT=$(impact_text "$OPENAI_HTTP" "$OPENAI_TIME" "$OPENAI_API" "$OPENAI_STATUS_IND" "$OPENAI_ISSUES")
 
 # ── Claude ─────────────────────────────────────────────
 CLAUDE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://api.anthropic.com)
@@ -72,7 +109,8 @@ tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
 CLAUDE_ISSUES=${CLAUDE_ISSUES:-None}
 CLAUDE_STATUS=$(color_status "$CLAUDE_STATUS_IND" "$CLAUDE_STATUS_DESC")
 CLAUDE_HTTP_LABEL=$(format_http "$CLAUDE_HTTP")
-CLAUDE_HEALTH=$(classify "$CLAUDE_HTTP" "$CLAUDE_TIME" "$CLAUDE_API")
+CLAUDE_HEALTH=$(classify "$CLAUDE_HTTP" "$CLAUDE_TIME" "$CLAUDE_API" "$CLAUDE_STATUS_IND")
+CLAUDE_IMPACT=$(impact_text "$CLAUDE_HTTP" "$CLAUDE_TIME" "$CLAUDE_API" "$CLAUDE_STATUS_IND" "$CLAUDE_ISSUES")
 
 
 # ── Output ─────────────────────────────────────────────
@@ -80,8 +118,8 @@ echo "=== AI HEALTH CHECK ==="
 echo "$(date)"
 echo ""
 
-printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
-  "OpenAI" "$OPENAI_HEALTH" "$OPENAI_TIME" "$OPENAI_HTTP_LABEL" "$OPENAI_API" "$OPENAI_STATUS_DESC" "$OPENAI_ISSUES"
+printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Impact:%s | Issues:%s\n" \
+  "OpenAI" "$OPENAI_HEALTH" "$OPENAI_TIME" "$OPENAI_HTTP_LABEL" "$OPENAI_API" "$OPENAI_STATUS_DESC" "$OPENAI_IMPACT" "$OPENAI_ISSUES"
 
-printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Issues:%s\n" \
-  "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP_LABEL" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_ISSUES"
+printf "%-8s %b | %ss | HTTP:%s | API:%s | Status:%s | Impact:%s | Issues:%s\n" \
+  "Claude" "$CLAUDE_HEALTH" "$CLAUDE_TIME" "$CLAUDE_HTTP_LABEL" "$CLAUDE_API" "$CLAUDE_STATUS_DESC" "$CLAUDE_IMPACT" "$CLAUDE_ISSUES"

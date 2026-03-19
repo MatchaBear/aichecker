@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.0.1`
+Current version: `v1.1.0`
 
 Right now it checks:
 
@@ -16,6 +16,7 @@ For each provider, the script collects:
 - Total response time
 - A simple public API sanity check
 - Official status page summary
+- A plain-language impact hint
 - Non-operational components reported on the status page
 
 The result is shown as a one-line status summary per provider with color-coded health states.
@@ -31,7 +32,7 @@ The `aicheck` script:
 5. Extracts the overall status description and any affected components.
 6. Classifies service health as:
    - `UP`
-   - `SLOW`
+   - `DEGRADED`
    - `BROKEN`
    - `DOWN`
 
@@ -40,16 +41,23 @@ The `aicheck` script:
 The script currently uses this logic:
 
 - `DOWN`: the API returns HTTP code `000`
-- `BROKEN`: the base API returns a non-`2xx` or non-`3xx` HTTP status
 - `BROKEN`: the models endpoint sanity check fails
-- `SLOW`: total response time is greater than `1.5` seconds
+- `BROKEN`: the provider status page reports a `major` or `critical` incident
+- `DEGRADED`: the base API returns a non-`2xx` or non-`3xx` HTTP status
+- `DEGRADED`: total response time is greater than `1.5` seconds
+- `DEGRADED`: the provider status page reports a `minor` incident
 - `UP`: none of the above conditions are triggered
+
+`DEGRADED` means the service appears reachable but not fully normal.
+`BROKEN` means the service check found a stronger signal that core functionality may be failing.
 
 The output also labels the HTTP result directly:
 
 - `normal`: `2xx` or `3xx`
 - `abnormal`: anything outside `2xx` or `3xx`
 - `no response`: `000`
+
+The output also includes an `Impact:` field to explain the likely meaning of the detected issue in plain language.
 
 Status-page severity is also colorized:
 
@@ -99,15 +107,21 @@ This assumes `~/bin` is already on your `PATH`.
 === AI HEALTH CHECK ===
 Wed Mar 19 09:00:00 +08 2026
 
-OpenAI  UP | 0.214s | HTTP:200 (normal) | API:✔ | Status:All Systems Operational | Issues:None
-Claude  SLOW | 1.812s | HTTP:200 (normal) | API:✔ | Status:Minor Service Outage | Issues:Console, API Requests
+OpenAI  UP | 0.214s | HTTP:200 (normal) | API:✔ | Status:All Systems Operational | Impact:No obvious service impact detected | Issues:None
+Claude  DEGRADED | 1.812s | HTTP:200 (normal) | API:✔ | Status:Minor Service Outage | Impact:Responses are slower than expected | Issues:Console, API Requests
 ```
 
 Example of a broken result:
 
 ```text
-OpenAI  BROKEN | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Issues:None
-Claude  BROKEN | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
+ProviderX  BROKEN | 0.051044s | HTTP:200 (normal) | API:✖ | Status:Major Service Outage | Impact:API endpoint behavior looks broken | Issues:API Requests
+```
+
+Example of a degraded result:
+
+```text
+OpenAI  DEGRADED | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Impact:Base API probe returned abnormal HTTP | Issues:None
+Claude  DEGRADED | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Impact:Base API probe returned abnormal HTTP | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
 ```
 
 ## Notes
@@ -119,7 +133,6 @@ Claude  BROKEN | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Servic
 ## Roadmap
 
 - Add more providers
-- Distinguish `DEGRADED` from `BROKEN`
 - Add JSON output mode
 - Add timeout and retry options
 - Add alerting or cron-friendly exit codes
