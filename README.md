@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.2.0`
+Current version: `v1.3.0`
 
 Right now it checks:
 
@@ -20,6 +20,7 @@ For each provider, the script collects:
 - Non-operational components reported on the status page
 
 The result is shown as a one-line status summary per provider with color-coded health states.
+The project also includes a continuous monitor mode that refreshes every 30 seconds.
 
 ## What the script does
 
@@ -92,13 +93,22 @@ Or make it available globally in your shell so you can run:
 aicheck
 ```
 
+For continuous monitoring with auto-refresh every 30 seconds:
+
+```bash
+aicm
+```
+
 One simple setup is to symlink it into `~/bin`:
 
 ```bash
 chmod +x ~/Desktop/Projects/aichecker/aicheck
 ln -sf ~/Desktop/Projects/aichecker/aicheck ~/bin/aicheck
+chmod +x ~/Desktop/Projects/aichecker/aicheck-monitor
+ln -sf ~/Desktop/Projects/aichecker/aicheck-monitor ~/bin/aicm
 source ~/.zshrc
 aicheck
+aicm
 ```
 
 This assumes `~/bin` is already on your `PATH`.
@@ -112,6 +122,8 @@ Wed Mar 19 09:00:00 +08 2026
 OpenAI  UP | 0.214s | HTTP:200 (normal) | API:✔ | Status:All Systems Operational | Impact:No obvious service impact detected | Issues:None
 Claude  DEGRADED | 1.812s | HTTP:200 (normal) | API:✔ | Status:Minor Service Outage | Impact:Responses are slower than expected | Issues:Console, API Requests
 ```
+
+Continuous monitor mode displays the same output in a refresh loop and redraws the screen every 30 seconds until you press `Ctrl+C`.
 
 Example of a broken result:
 
