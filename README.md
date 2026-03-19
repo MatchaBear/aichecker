@@ -2,7 +2,7 @@
 
 `aichecker` is a small Bash utility that performs a quick health check against major AI providers and prints a compact terminal summary.
 
-Current version: `v1.1.0`
+Current version: `v1.1.1`
 
 Right now it checks:
 
@@ -120,8 +120,8 @@ ProviderX  BROKEN | 0.051044s | HTTP:200 (normal) | API:✖ | Status:Major Servi
 Example of a degraded result:
 
 ```text
-OpenAI  DEGRADED | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Impact:Base API probe returned abnormal HTTP | Issues:None
-Claude  DEGRADED | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Impact:Base API probe returned abnormal HTTP | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
+OpenAI  DEGRADED | 0.051044s | HTTP:421 (abnormal) | API:✔ | Status:All Systems Operational | Impact:Probe result was unusual, but service may still work | Issues:None
+Claude  DEGRADED | 0.133106s | HTTP:404 (abnormal) | API:✔ | Status:Minor Service Outage | Impact:Probe result was unusual, but service may still work | Issues:claude.ai, platform.claude.com, Claude API, Claude Code
 ```
 
 ## Notes

@@ -70,7 +70,7 @@ impact_text() {
   elif [[ "$STATUS_IND" =~ ^(major|critical)$ ]]; then
     echo "Provider reports major service disruption"
   elif ! is_normal_http "$CODE"; then
-    echo "Base API probe returned abnormal HTTP"
+    echo "Probe result was unusual, but service may still work"
   elif awk "BEGIN {exit !($TIME > 1.5)}"; then
     echo "Responses are slower than expected"
   elif [[ "$STATUS_IND" == "minor" && "$ISSUES" != "None" ]]; then
